@@ -14,15 +14,17 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+      - name: Mostrar diretório atual e arquivos
+        run: |
+          pwd
+          ls -la
+          ls -la 02_model_serving_api
 
       - name: Instalar dependências
         run: |
+          cd 02_model_serving_api
           pip install --upgrade pip
-          pip install -r 02_model_serving_api/requirements.txt
+          pip install -r requirements.txt
 
       - name: Rodar Flake8 (análise estática)
         run: |
@@ -30,5 +32,8 @@ jobs:
           flake8 02_model_serving_api
 
       - name: Build Docker image
-        run: |
-          docker build -t mlops-devsecops-tcc-api ./02_model_serving_api
+        uses: docker/build-push-action@v4
+        with:
+          context: ./02_model_serving_api
+          push: false
+          tags: mlops-devsecops-tcc-api:latest
