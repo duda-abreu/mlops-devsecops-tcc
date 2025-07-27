@@ -1,0 +1,44 @@
+name: CI DevSecOps MLOps
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-test-secure:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install bandit safety
+
+      - name: Run Bandit
+        run: bandit -r 01_model_training 02_model_serving_api
+
+      - name: Run Safety
+        run: |
+          pip freeze > requirements.txt
+          safety check -r requirements.txt
+
+      - name: Build Docker image
+        run: docker build -t mlops-devsecops:latest 04_docker
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update && sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.44.0/trivy_0.44.0_Linux-64bit.deb
+          sudo dpkg -i trivy_0.44.0_Linux-64bit.deb
+
+      - name: Run Trivy
+        run: trivy image mlops-devsecops:latest
