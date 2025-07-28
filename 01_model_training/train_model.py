@@ -1,8 +1,10 @@
+
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 import joblib
 import os
+
 
 def train_and_save_model():
     # carrega dados
@@ -21,5 +23,7 @@ def train_and_save_model():
     joblib.dump(model, os.path.join(path, "model.pkl"))
     joblib.dump(scaler, os.path.join(path, "scaler.pkl"))
 
+
 if __name__ == "__main__":
     train_and_save_model()
+
