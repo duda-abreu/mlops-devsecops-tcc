@@ -32,7 +32,7 @@ jobs:
           safety check -r requirements.txt
 
       - name: Build Docker image
-        run: docker build -t mlops-devsecops:latest 04_docker
+        run: docker build -t mlops-devsecops:latest .
 
       - name: Install Trivy
         run: |
