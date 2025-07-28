@@ -29,7 +29,9 @@ class IrisInput(BaseModel):
 
 @app.get("/")
 def home():
-    return {"mensagem": "API de predição de Iris com modelo treinado e scaler."}
+    return {
+    "mensagem": "API de predição de Iris com modelo treinado e scaler."
+}
 
 
 @app.post("/predict")
