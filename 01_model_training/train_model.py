@@ -12,11 +12,11 @@ def train_and_save_model():
 
     # padroniza dados
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    x_scaled = scaler.fit_transform(X)
 
     # treina modelo com mais iterações
     model = LogisticRegression(max_iter=1000)
-    model.fit(X_scaled, y)
+    model.fit(x_scaled, y)
 
     # salva o modelo e o scaler na pasta da API
     path = "02_model_serving_api"
