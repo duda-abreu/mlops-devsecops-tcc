@@ -44,7 +44,7 @@ jobs:
         run: safety check -r 02_model_serving_api/requirements.txt
 
       - name: Build da imagem Docker
-        run: docker build -t mlops-devsecops:latest 02_model_serving_api
+        run: docker build -t mlops-devsecops:latest .
 
       - name: Instalar Trivy
         run: |
