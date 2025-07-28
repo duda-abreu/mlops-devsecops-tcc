@@ -36,12 +36,14 @@ def home():
 def predict(data: IrisInput):
     # converte entrada para numpy array
     input_array = np.array(
-        [[
-            data.sepal_length, 
-            data.sepal_width, 
-            data.petal_length, 
-            data.petal_width
-        ]]
+        [
+            [
+                data.sepal_length,
+                data.sepal_width,
+                data.petal_length,
+                data.petal_width,
+            ]
+        ]
     )
 
     # aplica o mesmo scaler do treinamento
@@ -51,3 +53,4 @@ def predict(data: IrisInput):
     prediction = model.predict(input_scaled)
 
     return {"classe_predita": int(prediction[0])}
+
