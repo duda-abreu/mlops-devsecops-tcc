@@ -1,23 +1,34 @@
-# Use imagem oficial do Python
-FROM python:3.10-slim
+# Stage 1: Build
+FROM python:3.10-slim AS builder
 
-# Define o diretório de trabalho
+# Define diretório de trabalho
 WORKDIR /app
 
-# Copia o requirements.txt para /app no container
-COPY requirements.txt .
+# Copia apenas o arquivo requirements para instalar dependências
+COPY 02_model_serving_api/requirements.txt .
 
-# Copia todo o código da pasta 02_model_serving_api para dentro do container
-COPY 02_model_serving_api/ ./02_model_serving_api/
+# Instala dependências no diretório do usuário (para copiar depois)
+RUN pip install --user -r requirements.txt
 
-# Instala as dependências do requirements.txt (está em /app)
-RUN pip install --no-cache-dir -r requirements.txt
+# Copia todo o código da aplicação
+COPY 02_model_serving_api /app
 
-# Define o diretório de trabalho para rodar a API
-WORKDIR /02_model_serving_api
+# Stage 2: Runtime
+FROM python:3.10-slim
 
-# Expõe a porta do FastAPI
+WORKDIR /app
+
+# Copia as dependências instaladas do estágio builder
+COPY --from=builder /root/.local /root/.local
+
+# Copia o código da aplicação
+COPY --from=builder /app /app
+
+# Ajusta PATH para usar as dependências do usuário
+ENV PATH=/root/.local/bin:$PATH
+
+# Expõe a porta da API
 EXPOSE 8000
 
-# Comando para iniciar a aplicação
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando para rodar a API FastAPI via uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

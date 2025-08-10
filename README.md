@@ -1,79 +1,153 @@
-# MLOps com DevSecOps - TCC
+# 🚀 MLOps com DevSecOps – TCC
 
-Projeto para desenvolvimento de pipeline de machine learning (MLOps) integrado a práticas de DevSecOps, com foco em automação, segurança e monitoramento contínuo.
+Pipeline de Machine Learning com integração de **DevSecOps**, priorizando automação, segurança e monitoramento contínuo.
 
-Este pipeline inclui:
+---
 
-- API construída com FastAPI para servir modelos ML containerizados;
-- Containerização via Docker;
-- Segurança automatizada com Bandit (SAST), Safety (verificação de dependências) e Trivy (scanner de imagens);
-- Pipeline CI/CD configurado com GitHub Actions para build, testes, lint e deploy automatizados;
-- Planejamento para monitoramento com Prometheus e Grafana.
+## 📌 Índice
 
-## Como rodar localmente
-1. Treine o modelo:
+- [Features Principais](#-features-principais)  
+- [Arquitetura e Pipeline](#-arquitetura-e-pipeline)  
+- [Como Executar Localmente](#-como-executar-localmente)  
+- [Execução com Docker (Multi-Stage Build)](#-execução-com-docker-multi-stage-build)  
+- [Monitoramento com Prometheus](#-monitoramento-com-prometheus)  
+- [Estrutura do Projeto](#-estrutura-do-projeto)  
+- [Exemplos de Requests/Responses](#-exemplos-de-requestsresponses)  
+- [Testes e Qualidade de Código](#-testes-e-qualidade-de-código)  
+- [Como Contribuir](#-como-contribuir)  
+- [Diretrizes de Segurança](#-diretrizes-de-segurança)  
+- [Sobre o Modelo e Dataset Iris](#-sobre-o-modelo-e-dataset-iris)  
+- [Próximos Passos](#-próximos-passos)
+
+---
+
+## 🌟 Features Principais
+
+- **API FastAPI** servindo modelo ML (Iris)  
+- **Segurança Automatizada**:
+  - Bandit – análise estática de código Python
+  - Safety – checagem de vulnerabilidades em dependências
+  - Trivy – análise de imagens Docker e pacotes de SO
+  - OPA – políticas de compliance (ex.: proibir root em containers)  
+- **CI/CD com GitHub Actions**:
+  - Lint (Flake8)
+  - Testes automatizados (Pytest)
+  - Build multi-stage e scan de imagens Docker
+- **Containerização com Docker** (multi-stage build para reduzir tamanho da imagem)
+- **Monitoramento com Prometheus & Grafana**
+- **Documentação completa** para reprodutibilidade e contribuições
+
+---
+
+## 🛠️ Como Executar Localmente
+
 ```bash
+# Clonar o repositório
+git clone https://github.com/sua-conta/mlops-devsecops-tcc.git
+cd mlops-devsecops-tcc
+
+# Criar e ativar ambiente virtual
 python -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate      # Windows
+source venv/bin/activate  # Linux/Mac
+.\venv\Scripts\activate   # Windows
 
-2. Instalar dependências
-```bash
+# Instalar dependências
 pip install -r requirements.txt
 
-3. Treinar o modelo
-```bash
-python 01_model_training/train_model.py
+# Rodar API
+uvicorn main:app --reload
 
-4. Rodar a API localmente
-```bash
-uvicorn src.api:app --reload
+A API estará disponível em:
+http://127.0.0.1:8000/docs
 
-5. Construir a imagem Docker
-```bash
-docker build -t mlops-devsecops-api .
+## 🐳 Execução com Docker (Multi-Stage Build)
+O Dockerfile utiliza multi-stage build para:
 
-6. Executar o container
-```bash
-docker run -p 8000:8000 mlops-devsecops-api
+Stage 1: instalar dependências e compilar o código
+Stage 2: criar imagem final leve (apenas binários e libs necessárias)
 
-## Próximos passos
-Implementar testes unitários completos e linting automatizado;
+# Build da imagem
+docker build -t mlops-devsecops:latest .
 
-Integrar Trivy para análise de vulnerabilidades em imagens Docker;
+# Rodar container
+docker run -p 8000:8000 mlops-devsecops:latest
 
-Implementar Open Policy Agent (OPA) para políticas automatizadas;
+## Estrutura do Projeto 
+mlops-devsecops-tcc/
+├── app/                # Código da API
+│   ├── main.py
+│   ├── model.py
+│   └── utils.py
+├── tests/              # Testes unitários
+├── monitoring/         # Configuração Prometheus/Grafana
+├── opa-policies/       # Políticas OPA
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
 
-Configurar monitoramento com Prometheus e dashboards no Grafana;
+##📬 Exemplos de Requests/Responses
+POST /predict
 
-Analisar métricas reais de desempenho e segurança do pipeline;
+Request:
+{
+  "sepal_length": 5.1,
+  "sepal_width": 3.5,
+  "petal_length": 1.4,
+  "petal_width": 0.2
+}
 
-Completar documentação e exemplos de uso.
+Response:
+{
+  "species": "setosa",
+  "confidence": 0.98
+}
 
-## Objetivo do projeto
-Construir e validar um pipeline MLOps seguro, automatizado e monitorável, integrando DevSecOps para garantir entregas confiáveis e contínuas de modelos de machine learning em ambiente cloud. O projeto serve como referência educacional e técnica, disponibilizando todo o código e documentação abertamente para a comunidade.
+## ✅ Testes e Qualidade de Código
+Local:
+pytest --maxfail=1 --disable-warnings -q
+flake8 .
+bandit -r app
+safety check
 
-## Sobre o modelo e o dataset Iris
+CI/CD:
+Executa testes e lint
+Faz scan de segurança (Bandit, Safety, Trivy)
+Enforce políticas OPA
 
-Este projeto utiliza o dataset Iris, um conjunto e amplamente adotado no ensino e testes de algoritmos de aprendizado de máquina supervisionado. Ele contém 150 amostras de flores da espécie Iris, divididas em três classes (setosa, versicolor, virginica), com quatro características numéricas:
+## 📊 Monitoramento com Prometheus
+Métricas disponíveis no endpoint /metrics.
+Para subir Prometheus e Grafana:
+docker-compose -f monitoring/docker-compose.yml up
 
-- Comprimento da sépala
-- Largura da sépala
-- Comprimento da pétala
-- Largura da pétala
 
-### Por que o Iris?
+## 📥 Diagrama da Pipeline CI/CD
 
-A motivação para o uso do dataset Iris está na sua simplicidade e formato estruturado, o que o torna ideal para prototipação rápida de pipelines de ML. Como objetivo deste projeto é testar, validar e demonstrar um pipeline completo com foco em DevSecOps, o Iris permite a construção de um modelo funcional sem a complexidade de pré-processamento ou coleta de dados externos.
+mermaid
+graph TD
+    A[Push no GitHub] --> B[CI: Flake8]
+    B --> C[CI: Testes Unitários]
+    C --> D[CI: Bandit]
+    D --> E[CI: Trivy]
+    E --> F[Build da Imagem Docker]
+    F --> G[Deploy Local ou em Cloud]
 
-### Aplicação
 
-O modelo treinado com o Iris serve como ponto de partida para:
+## 🔒 Segurança Integrada
+Bandit: detecta falhas comuns no código Python
+Safety: analisa vulnerabilidades conhecidas nas dependências
+Trivy: verifica vulnerabilidades em imagens Docker e pacotes OS
 
-- Implementar a entrega de modelos via API com FastAPI;
-- Validar práticas de CI/CD com GitHub Actions;
-- Integrar ferramentas automatizadas de segurança;
-- Testar monitoramento de métricas operacionais da API;
-- Avaliar o comportamento de um pipeline real com métricas de desempenho e segurança coletadas em tempo de execução.
+## 🌺 Sobre o Modelo e Dataset Iris
+Dataset: Iris (flores classificadas em 3 espécies)
 
-Embora simples, o modelo permite testar todas as etapas do ciclo de vida de machine learning em produção, sendo adequado para uma pesquisa, demonstração e validação prática dos conceitos de MLOps com DevSecOps.
+Modelo: Classificador treinado com scikit-learn
+
+Entrada esperada:
+
+{
+  "sepal_length": 5.1,
+  "sepal_width": 3.5,
+  "petal_length": 1.4,
+  "petal_width": 0.2
+}

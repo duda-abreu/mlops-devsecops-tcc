@@ -20,6 +20,14 @@ jobs:
           ls -la
           ls -la 02_model_serving_api
 
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('02_model_serving_api/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Setup Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -35,22 +43,22 @@ jobs:
         run: flake8 02_model_serving_api
 
       - name: Rodar testes com Pytest
-        run: pytest || echo "Nenhum teste automatizado encontrado"
+        run: pytest tests/
 
-      - name: Rodar Bandit (scan de segurança estática)
+      - name: Rodar Bandit (scan de segurança estática/SAST)
         run: bandit -r 01_model_training 02_model_serving_api
 
-      - name: Rodar Safety (checagem de vulnerabilidades)
-        run: safety check -r 02_model_serving_api/requirements.txt
+      - name: Run Safety check
+        run: safety check -r 02_model_serving_api/requirements.txt --full-report
 
       - name: Build da imagem Docker
         run: docker build -t mlops-devsecops:latest .
 
-      - name: Instalar Trivy
-        run: |
-          sudo apt-get update && sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/download/v0.44.0/trivy_0.44.0_Linux-64bit.deb
-          sudo dpkg -i trivy_0.44.0_Linux-64bit.deb
-
       - name: Scan de vulnerabilidades com Trivy
-        run: trivy image mlops-devsecops:latest
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: mlops-devsecops:latest
+      
+      - name: Run OPA policy check
+        run: opa eval --input user.json --data opa-policies/no-root-user.rego 'data.docker.security.deny'
+
