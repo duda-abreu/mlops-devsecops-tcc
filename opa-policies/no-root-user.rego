@@ -1,10 +1,6 @@
 package docker.security
 
-deny {
+deny[msg] if {
   input.User == "root"
-}
-
-deny_msg[msg] {
-  deny
-  msg = "Uso de usuário root não permitido na imagem Docker"
+  msg := "Uso de usuário root não permitido na imagem Docker"
 }
