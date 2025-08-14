@@ -1,4 +1,4 @@
-name: CI/CD Pipeline MLOps DevSecOps
+name: CI/CD Pipeline MLOps DevSecOps + Metrics
 
 on:
   push:
@@ -7,70 +7,91 @@ on:
     branches: [ main ]
 
 jobs:
-  build-test-lint-secure:
+  build-test-lint-secure-monitor:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do repositório
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Mostrar diretório atual e arquivos
-        run: |
-          pwd
-          ls -la
-          ls -la 02_model_serving_api
-
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('02_model_serving_api/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Setup Python 3.10
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Instalar dependências Python
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r 02_model_serving_api/requirements.txt
-          pip install flake8 pytest bandit safety
+          pip install flake8 pytest bandit safety autopep8 prometheus_client requests
 
-      - name: Corrigir formatação automaticamente (autopep8)
-        run: |
-          pip install autopep8
-          autopep8 --in-place --recursive 02_model_serving_api
+      - name: Format code
+        run: autopep8 --in-place --recursive 02_model_serving_api
 
-      - name: Rodar Flake8 (análise estática)
+      - name: Lint code
         run: flake8 02_model_serving_api --ignore=E302,E305,E501
 
-
-      - name: Rodar testes com Pytest
+      - name: Run Pytest
         run: pytest tests/
 
-      - name: Rodar Bandit (scan de segurança estática/SAST)
-        run: bandit -r 01_model_training 02_model_serving_api
+      - name: Create reports folder
+        run: mkdir -p reports
 
-      - name: Run Safety check
+      - name: Run Bandit
+        run: bandit -r 01_model_training 02_model_serving_api -f json -o reports/bandit_report.json
+
+      - name: Run Safety
         run: safety check -r 02_model_serving_api/requirements.txt --full-report
 
-      - name: Build da imagem Docker
+      - name: Build Docker image
         run: docker build -t mlops-devsecops:latest .
 
-      - name: Scan de vulnerabilidades com Trivy
-        uses: aquasecurity/trivy-action@master
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@v0.11.1
         with:
           image-ref: mlops-devsecops:latest
-      
-      - name: Install OPA CLI
+          format: json
+          output: reports/trivy_report.json
+
+      - name: Create user.json for OPA
+        run: echo '{"user":"root"}' > user.json
+
+      - name: Install OPA
         run: |
           wget https://openpolicyagent.org/downloads/latest/opa_linux_amd64
           chmod +x opa_linux_amd64
           sudo mv opa_linux_amd64 /usr/local/bin/opa
 
-      - name: Run OPA policy check
-        run: opa eval --input user.json --data opa-policies/no-root-user.rego 'data.docker.security.deny'
+      - name: Run OPA
+        run: opa eval --input user.json --data opa-policies/no-root-user.rego 'data.docker.security.deny' --format json > reports/opa_report.json
 
+      - name: Run API locally for metrics
+        run: |
+          # Start API in background
+          nohup python 02_model_serving_api/app.py &
+
+          # Wait API to start
+          sleep 5
+
+          # Test prediction endpoint and collect metrics
+          python - <<EOF
+          import requests
+
+            # Test predict endpoint
+            resp = requests.post('http://127.0.0.1:8000/predict/', json=[1.0,2.0,3.0])
+            print('API response:', resp.json())
+
+            # Collect Prometheus metrics
+            metrics = requests.get('http://127.0.0.1:8000/metrics')
+            with open('reports/prometheus_metrics.txt','w') as f:
+            f.write(metrics.text)
+            print('Metrics saved to reports/prometheus_metrics.txt')
+          EOF
+
+
+
+          metrics = requests.get('http://127.0.0.1:8000/metrics')
+          with open('reports/prometheus_metrics.txt','w') as f:
+            f.write(metrics.text)
+          print('Metrics saved to reports/prometheus_metrics.txt')
+          EOF

@@ -1,0 +1,18 @@
+FROM python:3.10
+
+# Vulnerabilidade: execução como root
+USER root
+
+# Vulnerabilidade: pacote antigo
+RUN apt-get update && apt-get install -y curl=7.68.0-1ubuntu2.18
+
+# Copiar API
+WORKDIR /app
+COPY . .
+
+# Instalar dependências
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Rodar API
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
