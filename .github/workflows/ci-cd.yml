@@ -47,7 +47,7 @@ jobs:
         run: docker build -t mlops-devsecops:latest .
 
       - name: Run Trivy
-        uses: aquasecurity/trivy-action@v0.31.0
+        uses: aquasecurity/trivy-action@v0.32.0
         with:
           image-ref: mlops-devsecops:latest
           format: json
