@@ -95,3 +95,9 @@ jobs:
             f.write(metrics.text)
           print('Metrics saved to reports/prometheus_metrics.txt')
           EOF
+      - name: Upload reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: reports/
+
