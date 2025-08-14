@@ -96,7 +96,7 @@ jobs:
           print('Metrics saved to reports/prometheus_metrics.txt')
           EOF
       - name: Upload reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: reports/
