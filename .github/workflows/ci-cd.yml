@@ -18,7 +18,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Rodar script ML simples
-        run: python src/train.py
+        run: python 01_model_training/train_model.py
       # Métricas como tempo total de execução e falhas não tratadas
 
   # Pipeline COM práticas MLOps
@@ -42,6 +42,9 @@ jobs:
 
       - name: Análise de Vulnerabilidades em dependências
         run: safety check
+
+      - name: Instalar ferramentas de teste e segurança
+        run: pip install flake8 pytest bandit safety
 
       - name: Build Docker Image
         run: docker build -t tcc-mlops:latest .
