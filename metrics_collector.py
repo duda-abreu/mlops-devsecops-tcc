@@ -1,17 +1,14 @@
 import json
 import os
 
-BANDIT_PATH = "reports/bandit_report.json"
-SAFETY_PATH = "reports/safety_report.json"
-TRIVY_PATH = "reports/trivy_report.json"
-TRAIN_TIME_PATH_BASELINE = "reports/train_time_baseline.txt"
-TRAIN_TIME_PATH_MLOPS = "reports/train_time_mlops.txt"
-
 def read_json(file_path):
     if os.path.exists(file_path):
         with open(file_path, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return {}
             try:
-                return json.load(f)
+                return json.loads(content)
             except json.JSONDecodeError:
                 print(f"Erro ao ler JSON: {file_path}")
                 return {}
@@ -21,44 +18,57 @@ def read_train_time(file_path):
     if os.path.exists(file_path):
         with open(file_path, "r") as f:
             try:
-                return int(f.read().strip())
+                return float(f.read().strip())
             except ValueError:
                 return None
     return None
 
-def count_vulnerabilities(report, key=None):
-    if not report:
+def count_bandit_issues(data):
+    if not data:
         return 0
-    if key:  
-        return len(report.get(key, []))
-    return len(report.get("results", [])) if "results" in report else len(report)
+    return len(data.get("results", []))
 
-def collect_metrics():
-    metrics = {}
+def count_safety_issues(data):
+    if not data:
+        return 0
+    return len(data.get("vulnerabilities", []))
 
-    metrics["baseline"] = {
-        "Bandit": count_vulnerabilities(read_json(BANDIT_PATH)),
-        "Safety": count_vulnerabilities(read_json(SAFETY_PATH)),
-        "Trivy": count_vulnerabilities(read_json(TRIVY_PATH), key="Results"),
-        "TrainTime(s)": read_train_time(TRAIN_TIME_PATH_BASELINE)
+def count_trivy_issues(data):
+    if not data:
+        return 0
+    return len(data.get("Results", []))
+
+paths = {
+    "baseline": {
+        "bandit": "reports/baseline_bandit_report.json",
+        "safety": "reports/baseline_safety_report.json",
+        "trivy": "reports/baseline_trivy_report.json",
+        "train": "reports/train_time_baseline.txt"
+    },
+    "mlops": {
+        "bandit": "reports/bandit_report.json",
+        "safety": "reports/safety_report.json",
+        "trivy": "reports/trivy_report.json",
+        "train": "reports/train_time_mlops.txt"
+    }
+}
+
+metrics = {}
+for key, files in paths.items():
+    bandit_data = read_json(files["bandit"])
+    safety_data = read_json(files["safety"])
+    trivy_data = read_json(files["trivy"])
+    train_time = read_train_time(files["train"])
+
+    metrics[key] = {
+        "Bandit": count_bandit_issues(bandit_data),
+        "Safety": count_safety_issues(safety_data),
+        "Trivy": count_trivy_issues(trivy_data),
+        "TrainTime(s)": train_time
     }
 
-    metrics["mlops"] = {
-        "Bandit": count_vulnerabilities(read_json(BANDIT_PATH)),
-        "Safety": count_vulnerabilities(read_json(SAFETY_PATH)),
-        "Trivy": count_vulnerabilities(read_json(TRIVY_PATH), key="Results"),
-        "TrainTime(s)": read_train_time(TRAIN_TIME_PATH_MLOPS)
-    }
-
-    return metrics
-
-def print_comparison(metrics):
-    print("\n--- Comparação de Métricas ---")
-    for key in ["Bandit", "Safety", "Trivy", "TrainTime(s)"]:
-        baseline_val = metrics["baseline"].get(key)
-        mlops_val = metrics["mlops"].get(key)
-        print(f"{key}: Baseline = {baseline_val}, MLOps = {mlops_val}")
-
-if __name__ == "__main__":
-    metrics = collect_metrics()
-    print_comparison(metrics)
+print("\n--- Comparação de Métricas ---")
+for metric in ["Bandit", "Safety", "Trivy", "TrainTime(s)"]:
+    baseline_val = metrics["baseline"].get(metric)
+    mlops_val = metrics["mlops"].get(metric)
+    print(f"{metric}: Baseline = {baseline_val}, MLOps = {mlops_val}")
