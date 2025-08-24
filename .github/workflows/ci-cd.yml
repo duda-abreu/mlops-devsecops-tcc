@@ -22,7 +22,7 @@ jobs:
           START=$(date +%s)
           python 01_model_training/train_model.py
           END=$(date +%s)
-          echo "Treino demorou $((END-START)) segundos" > reports/train_time_baseline.txt
+          echo $((END-START)) > reports/train_time_baseline.txt
 
       - name: Criar pasta de reports
         run: mkdir -p reports
@@ -73,7 +73,7 @@ jobs:
           START=$(date +%s)
           python 01_model_training/train_model.py
           END=$(date +%s)
-          echo "Treino com monitoramento demorou $((END-START)) segundos" > reports/train_time_mlops.txt
+          echo $((END-START)) > reports/train_time_mlops.txt
 
       - name: Upload de reports MLOps
         uses: actions/upload-artifact@v4
