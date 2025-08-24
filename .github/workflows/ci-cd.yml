@@ -56,7 +56,16 @@ jobs:
         run: bandit -r 01_model_training 02_model_serving_api -f json -o reports/bandit_report.json || true
 
       - name: Análise de Vulnerabilidades em dependências (Safety)
-        run: safety scan -r requirements.txt --full-report --json > reports/safety_report.json || true
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
+          args: --full-report --json > safety_report.json
+
+      - name: Upload Safety Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-report
+          path: safety_report.json
 
       - name: Build Docker Image
         run: docker build -t tcc-mlops:latest .
