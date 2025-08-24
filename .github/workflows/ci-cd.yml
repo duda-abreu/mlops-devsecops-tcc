@@ -41,7 +41,7 @@ jobs:
         run: bandit -r 01_model_training 02_model_serving_api -f json -o reports/bandit_report.json || true
 
       - name: Análise de Vulnerabilidades em dependências
-        run: safety check
+        run: safety scan -r requirements.txt --full-report || true
 
       - name: Instalar ferramentas de teste e segurança
         run: pip install flake8 pytest bandit safety
