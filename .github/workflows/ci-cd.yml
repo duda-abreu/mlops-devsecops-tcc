@@ -2,75 +2,55 @@ name: CI/CD Pipeline MLOps DevSecOps
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
-  build-test-lint-secure:
+  # Pipeline sem práticas MLOps
+  baseline:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v3
 
-      - name: Mostrar diretório atual e arquivos
-        run: |
-          pwd
-          ls -la
-          ls -la 02_model_serving_api
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('02_model_serving_api/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Rodar script ML simples
+        run: python src/train.py
+      # Métricas como tempo total de execução e falhas não tratadas
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+  # Pipeline COM práticas MLOps
+  mlops-devsecops:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
 
-      - name: Instalar dependências Python
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r 02_model_serving_api/requirements.txt
-          pip install flake8 pytest bandit safety
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
 
-      - name: Corrigir formatação automaticamente (autopep8)
-        run: |
-          pip install autopep8
-          autopep8 --in-place --recursive 02_model_serving_api
+      - name: Linter (Flake8)
+        run: flake8 src/
 
-      - name: Rodar Flake8 (análise estática)
-        run: flake8 02_model_serving_api --ignore=E302,E305,E501
-
-
-      - name: Rodar testes com Pytest
+      - name: Testes Unitários
         run: pytest tests/
 
-      - name: Rodar Bandit (scan de segurança estática/SAST)
-        run: bandit -r 01_model_training 02_model_serving_api
+      - name: Análise de Segurança (Bandit)
+        run: bandit -r src/
 
-      - name: Run Safety check
-        run: safety check -r 02_model_serving_api/requirements.txt --full-report
+      - name: Análise de Vulnerabilidades em dependências
+        run: safety check
 
-      - name: Build da imagem Docker
-        run: docker build -t mlops-devsecops:latest .
+      - name: Build Docker Image
+        run: docker build -t tcc-mlops:latest .
 
-      - name: Scan de vulnerabilidades com Trivy
+      - name: Scan de Imagem (Trivy)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: mlops-devsecops:latest
-      
-      - name: Install OPA CLI
-        run: |
-          wget https://openpolicyagent.org/downloads/latest/opa_linux_amd64
-          chmod +x opa_linux_amd64
-          sudo mv opa_linux_amd64 /usr/local/bin/opa
+          image-ref: 'tcc-mlops:latest'
 
-      - name: Run OPA policy check
-        run: opa eval --input user.json --data opa-policies/no-root-user.rego 'data.docker.security.deny'
-
+      - name: Rodar script ML com monitoramento
+        run: python src/train.py
+      # Métricas de tempo, cobertura de testes, vulnerabilidades detectadas
