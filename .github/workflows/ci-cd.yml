@@ -32,7 +32,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Linter (Flake8)
-        run: flake8 src/
+        run: flake8 01_model_training 02_model_serving_api
 
       - name: Testes Unitários
         run: pytest tests/
@@ -52,5 +52,5 @@ jobs:
           image-ref: 'tcc-mlops:latest'
 
       - name: Rodar script ML com monitoramento
-        run: python src/train.py
+        run: python 01_model_training/train_model.py
       # Métricas de tempo, cobertura de testes, vulnerabilidades detectadas
