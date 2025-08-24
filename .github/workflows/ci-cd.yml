@@ -18,8 +18,20 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Rodar script ML simples
-        run: python 01_model_training/train_model.py
-      # Métricas como tempo total de execução e falhas não tratadas
+        run: |
+          START=$(date +%s)
+          python 01_model_training/train_model.py
+          END=$(date +%s)
+          echo "Treino demorou $((END-START)) segundos" > reports/train_time_baseline.txt
+
+      - name: Criar pasta de reports
+        run: mkdir -p reports
+
+      - name: Upload de reports Baseline
+        uses: actions/upload-artifact@v3
+        with:
+          name: baseline-reports
+          path: reports/
 
   # Pipeline COM práticas MLOps
   mlops-devsecops:
@@ -61,4 +73,10 @@ jobs:
           START=$(date +%s)
           python 01_model_training/train_model.py
           END=$(date +%s)
-          echo "Treino com monitoramento demorou $((END-START)) segundos" > reports/train_time_mlops.txt      
+          echo "Treino com monitoramento demorou $((END-START)) segundos" > reports/train_time_mlops.txt
+
+      - name: Upload de reports MLOps
+        uses: actions/upload-artifact@v3
+        with:
+          name: mlops-reports
+          path: reports/

@@ -1,55 +1,52 @@
 import json
 import os
-import time
 
-REPORT_DIR = "reports"
+baseline_dir = "baseline-reports"
+mlops_dir = "mlops-reports"
 
-def read_bandit(path):
-    if not os.path.exists(path):
+def count_bandit_vulns(file_path):
+    if not os.path.exists(file_path):
         return 0
-    with open(path, "r") as f:
+    with open(file_path) as f:
         data = json.load(f)
     return len(data.get("results", []))
 
-def read_safety(path):
-    if not os.path.exists(path):
+def count_safety_vulns(file_path):
+    if not os.path.exists(file_path):
         return 0
-    with open(path, "r") as f:
+    with open(file_path) as f:
         data = json.load(f)
     return len(data.get("vulnerabilities", []))
 
-def read_trivy(path):
-    if not os.path.exists(path):
+def count_trivy_vulns(file_path):
+    if not os.path.exists(file_path):
         return 0
-    with open(path, "r") as f:
+    with open(file_path) as f:
         data = json.load(f)
-    vulnerabilities = 0
-    for result in data.get("Results", []):
-        vulnerabilities += len(result.get("Vulnerabilities", []))
-    return vulnerabilities
+    return sum(len(r.get("Vulnerabilities", [])) if r.get("Vulnerabilities") else 0 for r in data)
 
-def collect_metrics():
-    metrics = {}
+def read_train_time(file_path):
+    if not os.path.exists(file_path):
+        return None
+    with open(file_path) as f:
+        line = f.readline().strip()
+    parts = line.split()
+    return int(parts[-2]) if len(parts) >= 3 else None
 
-    metrics["bandit"] = read_bandit(os.path.join(REPORT_DIR, "bandit_report.json"))
-    metrics["safety"] = read_safety(os.path.join(REPORT_DIR, "safety_report.json"))
-    metrics["trivy"] = read_trivy(os.path.join(REPORT_DIR, "trivy_report.json"))
+baseline_metrics = {
+    "Bandit": count_bandit_vulns(os.path.join(baseline_dir, "bandit_report.json")),
+    "Safety": count_safety_vulns(os.path.join(baseline_dir, "safety_report.json")),
+    "Trivy": count_trivy_vulns(os.path.join(baseline_dir, "trivy_report.json")),
+    "TrainTime(s)": read_train_time(os.path.join(baseline_dir, "train_time_baseline.txt"))
+}
 
-    return metrics
+mlops_metrics = {
+    "Bandit": count_bandit_vulns(os.path.join(mlops_dir, "bandit_report.json")),
+    "Safety": count_safety_vulns(os.path.join(mlops_dir, "safety_report.json")),
+    "Trivy": count_trivy_vulns(os.path.join(mlops_dir, "trivy_report.json")),
+    "TrainTime(s)": read_train_time(os.path.join(mlops_dir, "train_time_mlops.txt"))
+}
 
-# Comparar baseline vs mlops
-def compare_metrics(baseline_metrics, mlops_metrics):
-    print("\n--- Comparação de métricas ---")
-    for key in mlops_metrics:
-        b_val = baseline_metrics.get(key, 0)
-        m_val = mlops_metrics.get(key, 0)
-        print(f"{key.capitalize()}: Baseline = {b_val}, MLOps = {m_val}")
-
-if __name__ == "__main__":
-    print("Coletando métricas baseline...")
-    baseline_metrics = collect_metrics()
-
-    print("\nColetando métricas MLOps DevSecOps...")
-    mlops_metrics = collect_metrics()
-
-    compare_metrics(baseline_metrics, mlops_metrics)
+print("\n--- Comparação de Métricas ---")
+for key in baseline_metrics.keys():
+    print(f"{key}: Baseline = {baseline_metrics[key]}, MLOps = {mlops_metrics[key]}")
