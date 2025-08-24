@@ -45,9 +45,15 @@ def count_bandit_issues(data):
 def count_safety_issues(data):
     if not data:
         return 0
-    if "vulnerabilities" in data:
-        return len(data["vulnerabilities"])
-    return 0
+    count = 0
+    projects = data.get("scan_results", {}).get("projects", [])
+    for project in projects:
+        for file in project.get("files", []):
+            for dep in file.get("results", {}).get("dependencies", []):
+                vulns = dep.get("vulnerabilities", {}).get("known_vulnerabilities", [])
+                count += len(vulns)
+    return count
+
 
 def count_trivy_issues(data):
     if not data:
