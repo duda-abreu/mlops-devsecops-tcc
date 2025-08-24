@@ -76,7 +76,7 @@ jobs:
           echo "Treino com monitoramento demorou $((END-START)) segundos" > reports/train_time_mlops.txt
 
       - name: Upload de reports MLOps
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: mlops-reports
           path: reports/
