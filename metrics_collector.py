@@ -9,6 +9,13 @@ def read_json_file(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
+    except UnicodeDecodeError:
+        try:
+            with open(path, "r", encoding="utf-16") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Erro ao ler JSON: {path} -> {e}")
+            return None
     except Exception as e:
         print(f"Erro ao ler JSON: {path} -> {e}")
         return None
@@ -19,7 +26,8 @@ def read_train_time(file_pattern):
         return None
     try:
         with open(files[0], "r", encoding="utf-8") as f:
-            return int(f.read().strip())
+            content = f.read().strip()
+            return int(content) if content else None
     except Exception as e:
         print(f"Erro ao ler tempo de treino: {files[0]} -> {e}")
         return None
@@ -35,9 +43,11 @@ def count_bandit_issues(data):
     ])
 
 def count_safety_issues(data):
-    if not data or "vulnerabilities" not in data:
+    if not data:
         return 0
-    return len(data["vulnerabilities"])
+    if "vulnerabilities" in data:
+        return len(data["vulnerabilities"])
+    return 0
 
 def count_trivy_issues(data):
     if not data:
