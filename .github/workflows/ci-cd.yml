@@ -14,6 +14,9 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v3
 
+      - name: Criar pasta de reports
+        run: mkdir -p reports
+
       - name: Instalar dependências
         run: pip install -r requirements.txt
 
@@ -24,27 +27,24 @@ jobs:
           END=$(date +%s)
           echo $((END-START)) > reports/train_time_baseline.txt
 
-      - name: Criar pasta de reports
-        run: mkdir -p reports
-
       - name: Upload de reports Baseline
         uses: actions/upload-artifact@v4
         with:
           name: baseline-reports
           path: reports/
 
-  # Pipeline COM práticas MLOps
+  # Pipeline COM práticas MLOps e DevSecOps
   mlops-devsecops:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
         uses: actions/checkout@v3
 
-      - name: Instalar dependências
-        run: pip install -r requirements.txt
-      
       - name: Criar pasta de reports
         run: mkdir -p reports
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
 
       - name: Linter (Flake8)
         run: flake8 01_model_training 02_model_serving_api || true
@@ -55,17 +55,8 @@ jobs:
       - name: Análise de Segurança (Bandit)
         run: bandit -r 01_model_training 02_model_serving_api -f json -o reports/bandit_report.json || true
 
-      - name: Análise de Vulnerabilidades em dependências (Safety)
-        uses: pyupio/safety-action@v1
-        with:
-          api-key: ${{ secrets.SAFETY_API_KEY }}
-          args: --full-report --json > safety_report.json
-
-      - name: Upload Safety Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: safety-report
-          path: safety_report.json
+      - name: Análise de Vulnerabilidades (Safety)
+        run: safety check -r requirements.txt --full-report --json > reports/safety_report.json
 
       - name: Build Docker Image
         run: docker build -t tcc-mlops:latest .
@@ -73,7 +64,7 @@ jobs:
       - name: Scan de Imagem (Trivy)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'python:3.10-slim'
+          image-ref: 'tcc-mlops:latest'
           format: 'json'
           output: 'reports/trivy_report.json'
 
