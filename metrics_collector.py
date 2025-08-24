@@ -31,7 +31,7 @@ def count_bandit_issues(data):
 def count_safety_issues(data):
     if not data:
         return 0
-    return len(data.get("vulnerabilities", []))
+    return len(data.get("vulnerabilities", [])) if "vulnerabilities" in data else 0
 
 def count_trivy_issues(data):
     if not data:

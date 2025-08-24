@@ -64,7 +64,7 @@ jobs:
       - name: Scan de Imagem (Trivy)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'tcc-mlops:latest'
+          image-ref: 'python:3.10-slim'
           format: 'json'
           output: 'reports/trivy_report.json'
 
