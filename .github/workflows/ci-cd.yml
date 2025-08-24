@@ -28,7 +28,7 @@ jobs:
         run: mkdir -p reports
 
       - name: Upload de reports Baseline
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: baseline-reports
           path: reports/
