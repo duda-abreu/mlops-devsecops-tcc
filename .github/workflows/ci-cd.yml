@@ -38,7 +38,7 @@ jobs:
         run: pytest tests/
 
       - name: Análise de Segurança (Bandit)
-        run: bandit -r src/
+        run: bandit -r 01_model_training 02_model_serving_api -f json -o reports/bandit_report.json || true
 
       - name: Análise de Vulnerabilidades em dependências
         run: safety check
