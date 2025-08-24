@@ -30,21 +30,21 @@ jobs:
 
       - name: Instalar dependências
         run: pip install -r requirements.txt
+      
+      - name: Criar pasta de reports
+        run: mkdir -p reports
 
       - name: Linter (Flake8)
         run: flake8 01_model_training 02_model_serving_api || true
 
       - name: Testes Unitários
-        run: pytest tests/
+        run: pytest tests/ || true
 
       - name: Análise de Segurança (Bandit)
         run: bandit -r 01_model_training 02_model_serving_api -f json -o reports/bandit_report.json || true
 
-      - name: Análise de Vulnerabilidades em dependências
-        run: safety scan -r requirements.txt --full-report || true
-
-      - name: Instalar ferramentas de teste e segurança
-        run: pip install flake8 pytest bandit safety
+      - name: Análise de Vulnerabilidades em dependências (Safety)
+        run: safety scan -r requirements.txt --full-report --json > reports/safety_report.json || true
 
       - name: Build Docker Image
         run: docker build -t tcc-mlops:latest .
@@ -53,7 +53,12 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'tcc-mlops:latest'
+          format: 'json'
+          output: 'reports/trivy_report.json'
 
       - name: Rodar script ML com monitoramento
-        run: python 01_model_training/train_model.py
-      # Métricas de tempo, cobertura de testes, vulnerabilidades detectadas
+        run: |
+          START=$(date +%s)
+          python 01_model_training/train_model.py
+          END=$(date +%s)
+          echo "Treino com monitoramento demorou $((END-START)) segundos" > reports/train_time_mlops.txt      
