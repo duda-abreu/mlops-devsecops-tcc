@@ -1,74 +1,70 @@
 import json
+import glob
 import os
 
-def read_json(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            content = f.read().strip()
-            if not content:
-                return {}
-            try:
-                return json.loads(content)
-            except json.JSONDecodeError:
-                print(f"Erro ao ler JSON: {file_path}")
-                return {}
-    return {}
+def read_json_file(path):
+    if not os.path.exists(path):
+        print(f"Aviso: arquivo não encontrado {path}")
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Erro ao ler JSON: {path} -> {e}")
+        return None
 
-def read_train_time(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            try:
-                return float(f.read().strip())
-            except ValueError:
-                return None
-    return None
+def read_train_time(file_pattern):
+    files = glob.glob(file_pattern)
+    if not files:
+        return None
+    try:
+        with open(files[0], "r", encoding="utf-8") as f:
+            return int(f.read().strip())
+    except Exception as e:
+        print(f"Erro ao ler tempo de treino: {files[0]} -> {e}")
+        return None
 
 def count_bandit_issues(data):
-    if not data:
+    if not data or "metrics" not in data:
         return 0
-    return len(data.get("results", []))
+    totals = data["metrics"].get("_totals", {})
+    return sum([
+        totals.get("SEVERITY.HIGH", 0),
+        totals.get("SEVERITY.MEDIUM", 0),
+        totals.get("SEVERITY.LOW", 0)
+    ])
 
 def count_safety_issues(data):
-    if not data:
+    if not data or "vulnerabilities" not in data:
         return 0
-    return len(data.get("vulnerabilities", [])) if "vulnerabilities" in data else 0
+    return len(data["vulnerabilities"])
 
 def count_trivy_issues(data):
     if not data:
         return 0
-    return len(data.get("Results", []))
+    if isinstance(data, list):
+        return len(data)
+    elif isinstance(data, dict):
+        return len(data.get("Results", []))
+    return 0
 
-paths = {
-    "baseline": {
-        "bandit": "reports/baseline_bandit_report.json",
-        "safety": "reports/baseline_safety_report.json",
-        "trivy": "reports/baseline_trivy_report.json",
-        "train": "reports/train_time_baseline.txt"
-    },
-    "mlops": {
-        "bandit": "reports/bandit_report.json",
-        "safety": "reports/safety_report.json",
-        "trivy": "reports/trivy_report.json",
-        "train": "reports/train_time_mlops.txt"
-    }
-}
+baseline_path = "reports"
+mlops_path = "reports"
 
-metrics = {}
-for key, files in paths.items():
-    bandit_data = read_json(files["bandit"])
-    safety_data = read_json(files["safety"])
-    trivy_data = read_json(files["trivy"])
-    train_time = read_train_time(files["train"])
+bandit_baseline = count_bandit_issues(read_json_file(os.path.join(baseline_path, "bandit_report.json")))
+bandit_mlops = count_bandit_issues(read_json_file(os.path.join(mlops_path, "bandit_report.json")))
 
-    metrics[key] = {
-        "Bandit": count_bandit_issues(bandit_data),
-        "Safety": count_safety_issues(safety_data),
-        "Trivy": count_trivy_issues(trivy_data),
-        "TrainTime(s)": train_time
-    }
+safety_baseline = count_safety_issues(read_json_file(os.path.join(baseline_path, "safety_report.json")))
+safety_mlops = count_safety_issues(read_json_file(os.path.join(mlops_path, "safety_report.json")))
+
+trivy_baseline = count_trivy_issues(read_json_file(os.path.join(baseline_path, "trivy_report.json")))
+trivy_mlops = count_trivy_issues(read_json_file(os.path.join(mlops_path, "trivy_report.json")))
+
+train_baseline = read_train_time(os.path.join(baseline_path, "train_time_baseline.txt"))
+train_mlops = read_train_time(os.path.join(mlops_path, "train_time_mlops.txt"))
 
 print("\n--- Comparação de Métricas ---")
-for metric in ["Bandit", "Safety", "Trivy", "TrainTime(s)"]:
-    baseline_val = metrics["baseline"].get(metric)
-    mlops_val = metrics["mlops"].get(metric)
-    print(f"{metric}: Baseline = {baseline_val}, MLOps = {mlops_val}")
+print(f"Bandit: Baseline = {bandit_baseline}, MLOps = {bandit_mlops}")
+print(f"Safety: Baseline = {safety_baseline}, MLOps = {safety_mlops}")
+print(f"Trivy: Baseline = {trivy_baseline}, MLOps = {trivy_mlops}")
+print(f"TrainTime(s): Baseline = {train_baseline}, MLOps = {train_mlops}")
