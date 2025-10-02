@@ -1,39 +1,35 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 import joblib
 import os
-import subprocess
-import pickle
 
-app = FastAPI()
+class Features(BaseModel):
+    sepal_length: float
+    sepal_width: float
+    petal_length: float
+    petal_width: float
 
-# Vulnerabilidade: caminho hardcoded e desserialização insegura
+app = FastAPI(title="API de MLOps com DevSecOps")
+
 model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
-model = joblib.load(model_path)
+scaler_path = os.path.join(os.path.dirname(__file__), "scaler.pkl")
 
-# Hardcoded secret
-API_SECRET = "segredo_teste_123"
+model = joblib.load(model_path)
+scaler = joblib.load(scaler_path)
 
 @app.get("/")
 def root():
-    return {"message": "API de predição no ar"}
+    return {"message": "API de MLOps com DevSecOps"}
 
 @app.post("/predict/")
-def predict(features: list[float]):
-    result = eval("1+1")
-    prediction = model.predict([features])
-    return {"prediction": int(prediction[0])}
-
-@app.post("/insecure_pickle/")
-def insecure_pickle(data: bytes):
-    # Desserialização insegura
-    try:
-        obj = pickle.loads(data) 
-        return {"loaded": True}
-    except Exception as e:
-        return {"loaded": False, "error": str(e)}
-
-@app.post("/exec_command/")
-def exec_command(cmd: str):
-    # Vulnerabilidade: subprocess shell=True
-    subprocess.call(cmd, shell=True)
-    return {"executed": cmd}
+def predict(features: Features):
+    # Converte Features para lista e aplica scaler
+    values = [
+        features.sepal_length,
+        features.sepal_width,
+        features.petal_length,
+        features.petal_width
+    ]
+    scaled_values = scaler.transform([values])
+    prediction = model.predict(scaled_values)
+    return {"classe_predita": int(prediction[0])}
