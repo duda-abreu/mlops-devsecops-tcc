@@ -1,47 +1,46 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-import joblib
-import numpy as np
+from flask import Flask, request, jsonify
+import subprocess
+import pickle
 import os
 
-app = FastAPI(
-    title="API MLOps com FastAPI",
-    description="Predição com modelo treinado + scaler",
-    version="1.0",
-)
+app = Flask(__name__)
 
-# Carrega modelo e scaler treinados
-model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
-scaler_path = os.path.join(os.path.dirname(__file__), "scaler.pkl")
+# Vulnerabilidade SECRET_KEY hardcoded
+app.config['SECRET_KEY'] = 'chave_secreta_teste_123'
 
-model = joblib.load(model_path)
-scaler = joblib.load(scaler_path)
+# Vulnerabilidade credencial hardcoded
+ADMIN_PASSWORD = "admin1234"
 
-# Define o formato esperado da entrada
-class IrisInput(BaseModel):
-    sepal_length: float
-    sepal_width: float
-    petal_length: float
-    petal_width: float
+@app.route("/Health")
+def health():
+    return jsonify({"status": "ok"})
 
-@app.get("/")
-def home():
-    return {"message": "API de MLOps com DevSecOps"}
+@app.route("/run_eval", methods=["POST"])
+def run_eval():
+    # Vulnerabilidade: executa eval em conteúdo do usuário
+    payload = request.data.decode('utf-8') or "0"
+    try:
+        result = eval(payload)
+    except Exception as e:
+        result = {"error": str(e)}
+    return jsonify({"result": str(result)})
 
-@app.post("/predict")
-def predict(data: IrisInput):
-    # Converte entrada para numpy array
-    input_array = np.array([[ 
-        data.sepal_length,
-        data.sepal_width,
-        data.petal_length,
-        data.petal_width
-    ]])
+@app.route("/exec", methods=["POST"])
+def exec_cmd():
+    # Vulnerabilidade: subprocess com shell=True a partir de input
+    cmd = request.args.get("cmd", "echo hello")
+    subprocess.call(cmd, shell=True)
+    return jsonify({"executed": cmd})
 
-    # Aplica o mesmo scaler do treinamento
-    input_scaled = scaler.transform(input_array)
+@app.route("/load_pickle", methods=["POST"])
+def load_pickle():
+    # Vulnerabilidade: desserialização insegura de dados enviados pelo cliente
+    data = request.data
+    try:
+        obj = pickle.loads(data) 
+        return jsonify({"loaded": True})
+    except Exception as e:
+        return jsonify({"loaded": False, "error": str(e)})
 
-    # Realiza predição
-    prediction = model.predict(input_scaled)
-
-    return {"classe_predita": int(prediction[0])}
+if __name__ == "__main__":
+    app.run(port=5000)
