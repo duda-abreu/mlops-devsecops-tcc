@@ -26,7 +26,6 @@ def main(reports_dir):
 
     metrics["total_pipeline_time"] = f"{total_time}s"
 
-
     baseline_file = os.path.join(reports_dir, "..", "baseline", "reports", "train_time_baseline.txt")
     if os.path.exists(baseline_file):
         baseline_time = read_time(baseline_file)
@@ -35,6 +34,19 @@ def main(reports_dir):
             metrics["diff_vs_baseline"] = f"{diff:.2f}%"
         else:
             metrics["diff_vs_baseline"] = "N/A"
+
+    bandit_file = os.path.join(reports_dir, "bandit_report.json")
+    if os.path.exists(bandit_file):
+        try:
+            with open(bandit_file) as f:
+                bandit_data = json.load(f)
+                if "_totals" in bandit_data.get("metrics", {}):
+                    metrics["bandit_totals"] = bandit_data["metrics"]["_totals"]
+                for file_path, file_metrics in bandit_data.get("metrics", {}).items():
+                    if file_path != "_totals":
+                        metrics.setdefault("bandit_files", {})[file_path] = file_metrics
+        except Exception as e:
+            sys.stderr.write(f"[WARN] Erro ao ler Bandit JSON: {e}\n")
 
     output_file = os.path.join(reports_dir, "metrics_summary.json")
     with open(output_file, "w") as f:

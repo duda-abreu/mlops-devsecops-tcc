@@ -1,27 +1,10 @@
 # 🚀 MLOps com DevSecOps – TCC
 
-Pipeline de Machine Learning com integração de **DevSecOps**, priorizando automação, segurança e monitoramento contínuo.
-
----
-
-## 📌 Índice
-
-- [Features Principais](#-features-principais)  
-- [Arquitetura e Pipeline](#-arquitetura-e-pipeline)  
-- [Como Executar Localmente](#-como-executar-localmente)  
-- [Execução com Docker (Multi-Stage Build)](#-execução-com-docker-multi-stage-build)  
-- [Monitoramento com Prometheus](#-monitoramento-com-prometheus)  
-- [Estrutura do Projeto](#-estrutura-do-projeto)  
-- [Exemplos de Requests/Responses](#-exemplos-de-requestsresponses)  
-- [Testes e Qualidade de Código](#-testes-e-qualidade-de-código)  
-- [Como Contribuir](#-como-contribuir)  
-- [Diretrizes de Segurança](#-diretrizes-de-segurança)  
-- [Sobre o Modelo e Dataset Iris](#-sobre-o-modelo-e-dataset-iris)  
-- [Próximos Passos](#-próximos-passos)
-
----
+Pipeline de Machine Learning com integração de DevSecOps, priorizando automação, segurança e monitoramento contínuo, garantindo qualidade, rastreabilidade e confiabilidade do ciclo de desenvolvimento.
 
 ## 🌟 Features Principais
+
+O projeto integra automação, segurança e monitoramento em todo o ciclo MLOps. Entre as funcionalidades destacam-se:
 
 - **API FastAPI** servindo modelo ML (Iris)  
 - **Segurança Automatizada**:
@@ -34,7 +17,6 @@ Pipeline de Machine Learning com integração de **DevSecOps**, priorizando auto
   - Testes automatizados (Pytest)
   - Build multi-stage e scan de imagens Docker
 - **Containerização com Docker** (multi-stage build para reduzir tamanho da imagem)
-- **Monitoramento com Prometheus & Grafana**
 - **Documentação completa** para reprodutibilidade e contribuições
 
 ---
@@ -74,22 +56,21 @@ docker run -p 8000:8000 mlops-devsecops:latest
 
 ## Estrutura do Projeto 
 mlops-devsecops-tcc/
-├── app/                # Código da API
-│   ├── main.py
-│   ├── model.py
-│   └── utils.py
-├── tests/              # Testes unitários
-├── monitoring/         # Configuração Prometheus/Grafana
-├── opa-policies/       # Políticas OPA
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+├── 00_baseline_app/
+│   └── tests/
+│       └── test_baseline.py      # Testes unitários da versão baseline
+├── 01_model_training/
+│   └── train_model.py            # Script de treinamento do modelo
+├── 02_model_serving_api/
+│   └── main.py                   # API FastAPI para servir o modelo
+├── Dockerfile                     # Dockerfile para containerização multi-stage
+├── metrics_collector.py           # Script para consolidar métricas de segurança e desempenho
+├── requirements.txt               # Dependências do projeto
+└── README.md                      # Documentação do projeto
 
 ##📬 Exemplos de Requests/Responses
 POST /predict
 
-Request:
 {
   "sepal_length": 5.1,
   "sepal_width": 3.5,
@@ -107,19 +88,11 @@ Response:
 Local:
 pytest --maxfail=1 --disable-warnings -q
 flake8 .
-bandit -r app
+bandit -r 01_model_training 02_model_serving_api
 safety check
 
 CI/CD:
-Executa testes e lint
-Faz scan de segurança (Bandit, Safety, Trivy)
-Enforce políticas OPA
-
-## 📊 Monitoramento com Prometheus
-Métricas disponíveis no endpoint /metrics.
-Para subir Prometheus e Grafana:
-docker-compose -f monitoring/docker-compose.yml up
-
+Executa lint, testes unitários, scan de segurança (Bandit, Safety, Trivy) e aplica políticas OPA antes de build e deploy.
 
 ## 📥 Diagrama da Pipeline CI/CD
 
