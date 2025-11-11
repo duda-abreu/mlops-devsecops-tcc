@@ -13,15 +13,11 @@ def test_read_root():
     assert response.json() == {"message": "API de MLOps com DevSecOps"}
 
 def test_predict_valid():
-    payload = {
-        "sepal_length": 5.1,
-        "sepal_width": 3.5,
-        "petal_length": 1.4,
-        "petal_width": 0.2
-    }
-    response = client.post("/predict", json=payload)
+    payload = [5.1, 3.5, 1.4, 0.2] 
+    response = client.post("/predict/", json=payload)
     assert response.status_code == 200
-    assert "classe_predita" in response.json()
+    assert "prediction" in response.json()
+
 
 def test_predict_missing_field():
     payload = {
