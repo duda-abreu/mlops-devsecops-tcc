@@ -20,7 +20,7 @@ jobs:
       - name: Instalar dependências
         run: pip install -r requirements.txt
 
-      - name: Rodar script ML simples
+      - name: Rodar script ML
         run: |
           START=$(date +%s)
           python 01_model_training/train_model.py
